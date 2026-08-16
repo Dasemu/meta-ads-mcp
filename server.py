@@ -193,6 +193,8 @@ def create_adset(
     bid_amount: int | None = None,
     start_time: str | None = None,
     end_time: str | None = None,
+    dsa_beneficiary: str | None = None,
+    dsa_payor: str | None = None,
 ) -> dict:
     """Create an ad set under a campaign. targeting is a Meta targeting spec dict
     (e.g. {"geo_locations": {"countries": ["ES"]}, "age_min": 18, "age_max": 65}).
@@ -200,7 +202,8 @@ def create_adset(
     'LEAD_GENERATION') must be compatible with the campaign's objective. Exactly
     one of daily_budget/lifetime_budget is normally required unless the campaign
     uses campaign-level budget optimization. start_time/end_time are ISO 8601.
-    Defaults to status=PAUSED."""
+    dsa_beneficiary/dsa_payor are required by Meta for ads served in the EU
+    (Digital Services Act disclosure). Defaults to status=PAUSED."""
     payload = {
         "name": name,
         "campaign_id": campaign_id,
@@ -213,6 +216,8 @@ def create_adset(
         "bid_amount": bid_amount,
         "start_time": start_time,
         "end_time": end_time,
+        "dsa_beneficiary": dsa_beneficiary,
+        "dsa_payor": dsa_payor,
     }
     return _request("POST", f"/{_act(ad_account_id)}/adsets", data=_form(payload)).json()
 
