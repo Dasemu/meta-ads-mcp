@@ -271,7 +271,7 @@ def get_ad_creative(creative_id: str) -> dict:
 @mcp.tool()
 def create_ad_creative(
     name: str,
-    page_id: str,
+    page_id: str | None = None,
     ad_account_id: str | None = None,
     message: str | None = None,
     link: str | None = None,
@@ -280,36 +280,58 @@ def create_ad_creative(
     call_to_action_type: str | None = None,
     headline: str | None = None,
     description: str | None = None,
+    object_story_id: str | None = None,
+    instagram_user_id: str | None = None,
+    source_instagram_media_id: str | None = None,
 ) -> dict:
     """Create an ad creative for a link/image or video ad, backed by a Facebook
     Page (page_id). Use upload_ad_image/upload_ad_video first to get image_hash/
-    video_id. call_to_action_type is e.g. 'LEARN_MORE', 'SHOP_NOW', 'SIGN_UP'."""
-    link_data: dict = {}
-    if message is not None:
-        link_data["message"] = message
-    if link is not None:
-        link_data["link"] = link
-    if image_hash is not None:
-        link_data["image_hash"] = image_hash
-    if headline is not None:
-        link_data["name"] = headline
-    if description is not None:
-        link_data["description"] = description
-    if call_to_action_type is not None:
-        link_data["call_to_action"] = {"type": call_to_action_type}
+    video_id. call_to_action_type is e.g. 'LEARN_MORE', 'SHOP_NOW', 'SIGN_UP'.
 
-    object_story_spec: dict = {"page_id": page_id}
-    if video_id is not None:
-        video_data = {"video_id": video_id}
-        if message is not None:
-            video_data["message"] = message
-        if call_to_action_type is not None:
-            video_data["call_to_action"] = {"type": call_to_action_type}
-        object_story_spec["video_data"] = video_data
+    To instead promote an existing organic post as-is, pass one of:
+    - object_story_id: an existing Facebook Page post, as "<page_id>_<post_id>".
+    - instagram_user_id + source_instagram_media_id: an existing Instagram post
+      (source_instagram_media_id is the IG media id); page_id must still be set
+      to the Facebook Page linked to that Instagram account.
+    In both cases message/link/image_hash/video_id/headline/description/
+    call_to_action_type are ignored since the ad reuses the published post."""
+    if object_story_id is not None:
+        payload = {"name": name, "object_story_id": object_story_id}
+    elif source_instagram_media_id is not None:
+        payload = {
+            "name": name,
+            "object_id": page_id,
+            "instagram_user_id": instagram_user_id,
+            "source_instagram_media_id": source_instagram_media_id,
+        }
     else:
-        object_story_spec["link_data"] = link_data
+        link_data: dict = {}
+        if message is not None:
+            link_data["message"] = message
+        if link is not None:
+            link_data["link"] = link
+        if image_hash is not None:
+            link_data["image_hash"] = image_hash
+        if headline is not None:
+            link_data["name"] = headline
+        if description is not None:
+            link_data["description"] = description
+        if call_to_action_type is not None:
+            link_data["call_to_action"] = {"type": call_to_action_type}
 
-    payload = {"name": name, "object_story_spec": object_story_spec}
+        object_story_spec: dict = {"page_id": page_id}
+        if video_id is not None:
+            video_data = {"video_id": video_id}
+            if message is not None:
+                video_data["message"] = message
+            if call_to_action_type is not None:
+                video_data["call_to_action"] = {"type": call_to_action_type}
+            object_story_spec["video_data"] = video_data
+        else:
+            object_story_spec["link_data"] = link_data
+
+        payload = {"name": name, "object_story_spec": object_story_spec}
+
     return _request("POST", f"/{_act(ad_account_id)}/adcreatives", data=_form(payload)).json()
 
 
